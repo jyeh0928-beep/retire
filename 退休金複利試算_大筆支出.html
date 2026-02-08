@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全生涯退休資產模擬工作站 (旗艦版)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>全生涯退休資產模擬工作站 (旗艦響應版)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,28 +22,41 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        /* 自定義滑桿樣式 */
+        /* 全域字體優化 - 針對 Mac/iOS */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 自定義滑桿樣式 - 觸控優化 */
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 20px;
-            width: 20px;
+            height: 24px; /* 加大觸控區 */
+            width: 24px;
             border-radius: 50%;
             background: #ffffff;
             border: 2px solid currentColor;
-            margin-top: -8px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            margin-top: -10px; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             cursor: pointer;
+            transition: transform 0.1s;
+        }
+        input[type=range]:active::-webkit-slider-thumb {
+            transform: scale(1.1);
         }
         input[type=range]::-webkit-slider-runnable-track {
             height: 6px;
             border-radius: 3px;
         }
+        
         /* 隱藏 Number input 的箭頭 */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
             margin: 0; 
         }
+        
+        /* Toggle Switch */
         .toggle-checkbox:checked {
             right: 0;
             border-color: #10b981;
@@ -51,6 +64,7 @@
         .toggle-checkbox:checked + .toggle-label {
             background-color: #10b981;
         }
+        
         /* 動畫效果 */
         @keyframes pulse-ring {
             0% { transform: scale(0.33); }
@@ -78,14 +92,17 @@
                 margin: 0 !important; 
                 padding: 0 !important;
                 width: 100% !important;
+                page-break-inside: avoid;
             }
         }
-        /* 自定義滾動條 */
+
+        /* 自定義滾動條 (Mac 風格) */
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9; 
+            background: transparent; 
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #cbd5e1; 
@@ -116,7 +133,7 @@
             return new Intl.NumberFormat('zh-TW').format(val);
         };
 
-        // --- 圖示元件 ---
+        // --- 圖示元件 (SVG) ---
         const Icons = {
             Calculator: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
             DollarSign: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
@@ -187,7 +204,7 @@
             );
         };
 
-        // --- Life Events Manager Widget (New Feature) ---
+        // --- Life Events Manager Widget (Responsive) ---
         const LifeEventsManager = ({ events, setEvents, currentAge, maxAge }) => {
             const [newEventName, setNewEventName] = useState("");
             const [newEventAge, setNewEventAge] = useState(65);
@@ -221,45 +238,47 @@
                     </h2>
                     
                     <p className="text-xs text-slate-500 mb-4">
-                        規劃未來的大額單筆支出（如：子女結婚、環遊世界、醫療預備金）。系統會自動計算通膨後的實際金額。
+                        規劃未來的大額單筆支出（如：子女結婚、環遊世界）。系統自動計算通膨後金額。
                     </p>
 
-                    {/* Input Area */}
-                    <div className="grid grid-cols-12 gap-2 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <div className="col-span-12 md:col-span-4">
+                    {/* Input Area: Stacked on mobile, Grid on tablet/desktop */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <div className="md:col-span-4">
                             <label className="text-[10px] text-slate-500 block mb-1">事件名稱</label>
                             <input 
                                 type="text" 
                                 placeholder="例: 環遊世界" 
                                 value={newEventName}
                                 onChange={(e) => setNewEventName(e.target.value)}
-                                className="w-full text-sm p-1.5 rounded border border-slate-300 focus:border-rose-500 outline-none"
+                                className="w-full text-sm p-2 rounded border border-slate-300 focus:border-rose-500 outline-none transition-colors"
                             />
                         </div>
-                        <div className="col-span-6 md:col-span-3">
-                            <label className="text-[10px] text-slate-500 block mb-1">發生歲數</label>
-                            <input 
-                                type="number" 
-                                min={currentAge + 1} max={maxAge}
-                                value={newEventAge}
-                                onChange={(e) => setNewEventAge(e.target.value)}
-                                className="w-full text-sm p-1.5 rounded border border-slate-300 focus:border-rose-500 outline-none"
-                            />
+                        <div className="grid grid-cols-2 md:col-span-6 gap-3 md:flex md:gap-3">
+                            <div className="md:flex-1">
+                                <label className="text-[10px] text-slate-500 block mb-1">發生歲數</label>
+                                <input 
+                                    type="number" 
+                                    min={currentAge + 1} max={maxAge}
+                                    value={newEventAge}
+                                    onChange={(e) => setNewEventAge(e.target.value)}
+                                    className="w-full text-sm p-2 rounded border border-slate-300 focus:border-rose-500 outline-none transition-colors"
+                                />
+                            </div>
+                            <div className="md:flex-1">
+                                <label className="text-[10px] text-slate-500 block mb-1">預算(現值)</label>
+                                <input 
+                                    type="number" 
+                                    step={10000}
+                                    value={newEventCost}
+                                    onChange={(e) => setNewEventCost(e.target.value)}
+                                    className="w-full text-sm p-2 rounded border border-slate-300 focus:border-rose-500 outline-none transition-colors"
+                                />
+                            </div>
                         </div>
-                        <div className="col-span-6 md:col-span-3">
-                            <label className="text-[10px] text-slate-500 block mb-1">預算(現值)</label>
-                            <input 
-                                type="number" 
-                                step={10000}
-                                value={newEventCost}
-                                onChange={(e) => setNewEventCost(e.target.value)}
-                                className="w-full text-sm p-1.5 rounded border border-slate-300 focus:border-rose-500 outline-none"
-                            />
-                        </div>
-                        <div className="col-span-12 md:col-span-2 flex items-end">
+                        <div className="md:col-span-2 flex items-end">
                             <button 
                                 onClick={addEvent}
-                                className="w-full bg-rose-500 hover:bg-rose-600 text-white p-1.5 rounded text-sm font-bold flex items-center justify-center gap-1 transition-colors"
+                                className="w-full bg-rose-500 hover:bg-rose-600 text-white p-2 rounded text-sm font-bold flex items-center justify-center gap-1 transition-all active:scale-95"
                             >
                                 <Icons.Plus size={16}/> 新增
                             </button>
@@ -274,7 +293,7 @@
                             </div>
                         )}
                         {events.map((ev) => (
-                            <div key={ev.id} className="flex justify-between items-center p-2 bg-white border border-l-4 border-slate-200 border-l-rose-400 rounded shadow-sm hover:shadow-md transition-shadow">
+                            <div key={ev.id} className="flex justify-between items-center p-3 bg-white border border-l-4 border-slate-200 border-l-rose-400 rounded shadow-sm hover:shadow-md transition-shadow">
                                 <div>
                                     <div className="text-sm font-bold text-slate-700">
                                         {ev.age}歲：{ev.name}
@@ -285,9 +304,9 @@
                                 </div>
                                 <button 
                                     onClick={() => removeEvent(ev.id)}
-                                    className="text-slate-400 hover:text-rose-500 p-1 rounded-full hover:bg-rose-50 transition-colors"
+                                    className="text-slate-400 hover:text-rose-500 p-2 rounded-full hover:bg-rose-50 transition-colors"
                                 >
-                                    <Icons.Trash2 size={16}/>
+                                    <Icons.Trash2 size={18}/>
                                 </button>
                             </div>
                         ))}
@@ -373,7 +392,7 @@
             }, [currentAge, retireAge, maxAge, initialAmount, monthlyContribution, monthlyWithdrawal, annualRate, inflationRate, adjustForInflation, events]);
 
             return (
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mt-6 no-print">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mt-6 no-print overflow-hidden">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
                         <div>
                             <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -381,7 +400,7 @@
                                 壓力測試：敏感度分析矩陣
                             </h3>
                             <p className="text-sm text-slate-500 mt-1">
-                                交叉分析「投資報酬率」與「退休花費」的變化，尋找您的安全邊際。(已納入重大支出)
+                                交叉分析「投資報酬率」與「退休花費」的變化，尋找您的安全邊際。
                             </p>
                         </div>
                         <div className="mt-2 md:mt-0 px-3 py-1 bg-violet-50 text-violet-700 text-xs font-bold rounded-full border border-violet-100">
@@ -389,7 +408,7 @@
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto custom-scrollbar pb-2">
                         <div className="min-w-[600px] flex flex-col items-center">
                             <div className="mb-2 font-bold text-slate-600 text-sm">預期年化報酬率 (%)</div>
                             <div className="flex">
@@ -571,32 +590,32 @@
             };
 
             return (
-                <div className="bg-slate-800 p-4 rounded-xl shadow-lg border border-slate-700 w-full max-w-[280px] mx-auto">
+                <div className="bg-slate-800 p-4 rounded-xl shadow-lg border border-slate-700 w-full mx-auto h-full flex flex-col justify-center">
                     <div className="bg-slate-900 text-white text-right text-2xl p-3 rounded mb-4 font-mono overflow-hidden">
                         {display}
                     </div>
                     <div className="grid grid-cols-4 gap-2">
                         {['C', '/', '*', '-'].map(op => (
                             <button key={op} onClick={() => op === 'C' ? clearDisplay() : performOperation(op)} 
-                                className={`p-2 rounded font-bold transition-colors ${op === 'C' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-white'}`}>
+                                className={`p-3 rounded font-bold transition-colors text-lg ${op === 'C' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-white'}`}>
                                 {op}
                             </button>
                         ))}
                         {[7, 8, 9, '+'].map(btn => (
                             <button key={btn} onClick={() => typeof btn === 'number' ? inputDigit(btn) : performOperation(btn)}
-                                className={`p-2 rounded font-bold transition-colors ${typeof btn === 'number' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-white'}`}>
+                                className={`p-3 rounded font-bold transition-colors text-lg ${typeof btn === 'number' ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-slate-600 hover:bg-slate-500 text-white'}`}>
                                 {btn}
                             </button>
                         ))}
                         {[4, 5, 6].map(btn => (
-                            <button key={btn} onClick={() => inputDigit(btn)} className="p-2 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold">{btn}</button>
+                            <button key={btn} onClick={() => inputDigit(btn)} className="p-3 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold text-lg">{btn}</button>
                         ))}
-                         <button onClick={() => performOperation('=')} className="p-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold row-span-2 flex items-center justify-center">=</button>
+                         <button onClick={() => performOperation('=')} className="p-3 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold row-span-2 flex items-center justify-center text-lg">=</button>
                         {[1, 2, 3].map(btn => (
-                            <button key={btn} onClick={() => inputDigit(btn)} className="p-2 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold">{btn}</button>
+                            <button key={btn} onClick={() => inputDigit(btn)} className="p-3 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold text-lg">{btn}</button>
                         ))}
-                        <button onClick={() => inputDigit(0)} className="p-2 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold col-span-2">0</button>
-                        <button onClick={inputDot} className="p-2 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold">.</button>
+                        <button onClick={() => inputDigit(0)} className="p-3 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold col-span-2 text-lg">0</button>
+                        <button onClick={inputDot} className="p-3 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold text-lg">.</button>
                     </div>
                 </div>
             );
@@ -607,8 +626,8 @@
             const [note, setNote] = useState(() => localStorage.getItem('retire_note') || '');
             useEffect(() => { localStorage.setItem('retire_note', note); }, [note]);
             return (
-                <div className="bg-yellow-100 p-1 rounded-sm shadow-md rotate-1 hover:rotate-0 transition-transform duration-300 w-full max-w-[280px] mx-auto mt-6 relative">
-                    <div className="bg-yellow-200/50 p-4 h-64 relative">
+                <div className="bg-yellow-100 p-1 rounded-sm shadow-md rotate-1 hover:rotate-0 transition-transform duration-300 w-full mx-auto relative h-full">
+                    <div className="bg-yellow-200/50 p-4 h-full min-h-[250px] relative">
                         <div className="absolute top-0 left-0 w-full h-8 bg-yellow-300/30 border-b border-yellow-300/50 flex items-center justify-center text-yellow-700 text-xs font-bold tracking-widest uppercase">
                             NOTES
                         </div>
@@ -682,7 +701,7 @@
             }[suggestion.color];
 
             return (
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 w-full max-w-[280px] mx-auto mt-6">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 w-full mx-auto h-full flex flex-col">
                     <h3 className="font-bold text-slate-700 mb-3 flex items-center justify-center gap-2">
                         <Icons.Briefcase size={18} className="text-indigo-500"/>
                         智能投資配置建議
@@ -693,7 +712,7 @@
                         <div className="text-2xl font-bold font-mono text-slate-800">{annualRate}%</div>
                     </div>
 
-                    <div className={`p-3 rounded-lg border ${colorClass} mb-3`}>
+                    <div className={`p-3 rounded-lg border ${colorClass} mb-3 flex-1`}>
                         <div className="flex justify-between items-center mb-1">
                             <span className="font-bold text-sm">{suggestion.type}</span>
                             <span className="text-xs font-bold px-2 py-0.5 bg-white/50 rounded-full border border-black/5">風險: {suggestion.risk}</span>
@@ -703,7 +722,7 @@
                         </p>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 mt-auto">
                         <div className="flex justify-between text-xs text-slate-500 font-medium">
                             <span>建議配置</span>
                             <Icons.Activity size={14}/>
@@ -798,7 +817,7 @@
             };
 
             return (
-                <div className="bg-slate-800 p-5 rounded-2xl shadow-lg border border-slate-700 w-full max-w-[280px] mx-auto mt-6 text-white relative overflow-hidden">
+                <div className="bg-slate-800 p-5 rounded-2xl shadow-lg border border-slate-700 w-full mx-auto text-white relative overflow-hidden h-full flex flex-col justify-center">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500 rounded-full blur-3xl opacity-20 -mr-10 -mt-10"></div>
                     
                     <h3 className="font-bold text-slate-100 mb-4 flex items-center justify-center gap-2 relative z-10">
@@ -813,7 +832,7 @@
                             </p>
                             <button 
                                 onClick={runSimulation}
-                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-all active:scale-95 shadow-lg border border-indigo-400/30"
+                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-all active:scale-95 shadow-lg border border-indigo-400/30"
                             >
                                 開始模擬
                             </button>
@@ -844,7 +863,7 @@
 
                             <button 
                                 onClick={runSimulation}
-                                className="text-xs text-slate-500 hover:text-slate-300 underline decoration-slate-600 hover:decoration-slate-400 transition-colors"
+                                className="text-xs text-slate-500 hover:text-slate-300 underline decoration-slate-600 hover:decoration-slate-400 transition-colors py-2"
                             >
                                 重新測試
                             </button>
@@ -885,11 +904,11 @@
             const isSafe = !bankruptcyAge;
 
             return (
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mt-6 relative overflow-hidden report-container print:shadow-none print:border-none print:mt-0">
+                <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200 mt-6 relative overflow-hidden report-container print:shadow-none print:border-none print:mt-0">
                     <div className="absolute top-0 left-0 w-full h-2 bg-slate-800"></div>
                     
                     {/* Report Header */}
-                    <div className="flex justify-between items-end mb-8 border-b border-slate-100 pb-4">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-slate-100 pb-4 gap-4">
                         <div>
                             <h2 className="text-2xl font-serif font-bold text-slate-800 mb-1 flex items-center gap-2">
                                 <Icons.FileText className="text-slate-600"/>
@@ -897,8 +916,8 @@
                             </h2>
                             <p className="text-sm text-slate-500">Retirement Planning Diagnosis Report</p>
                         </div>
-                        <div className="text-right no-print">
-                            <button onClick={handlePrint} className="flex items-center gap-1 text-sm bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded transition-colors">
+                        <div className="no-print w-full md:w-auto">
+                            <button onClick={handlePrint} className="w-full md:w-auto flex items-center justify-center gap-1 text-sm bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded transition-colors active:scale-95">
                                 <Icons.Printer size={16}/>
                                 列印 / 存為PDF
                             </button>
@@ -909,7 +928,7 @@
                     </div>
 
                     {/* Summary Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
                             <p className="text-xs text-slate-500 mb-1">目前年齡 / 退休</p>
                             <p className="font-bold text-slate-800 text-lg">{currentAge} 歲 <span className="text-slate-400 mx-1">→</span> {actualRetireAge} 歲</p>
@@ -922,7 +941,7 @@
                         </div>
                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
                             <p className="text-xs text-slate-500 mb-1">累積總本金</p>
-                            <p className="font-bold text-slate-800 text-lg">{formatMoneyFull(totalPrincipal)}</p>
+                            <p className="font-bold text-slate-800 text-lg md:text-xl truncate">{formatMoneyFull(totalPrincipal)}</p>
                         </div>
                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
                             <p className="text-xs text-slate-500 mb-1">資產耗盡年齡</p>
@@ -933,7 +952,7 @@
                     </div>
 
                     {/* Detailed Analysis Content */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                         <div>
                             <h3 className="font-bold text-slate-700 border-l-4 border-slate-800 pl-3 mb-4">財務概況分析</h3>
                             <ul className="space-y-3 text-sm text-slate-600 leading-relaxed">
@@ -950,6 +969,10 @@
                                 <li className="flex justify-between border-b border-slate-50 pb-2">
                                     <span>投資複利預期效益：</span>
                                     <span className="font-mono font-medium text-emerald-600">+{annualRate}% 年化</span>
+                                </li>
+                                <li className="flex justify-between border-b border-slate-50 pb-2">
+                                    <span>通膨侵蝕效應預估：</span>
+                                    <span className="font-mono font-medium text-rose-500">-{inflationRate}% 年化</span>
                                 </li>
                                 <li className="flex justify-between border-b border-slate-50 pb-2">
                                     <span>期末剩餘資產 (實質購買力)：</span>
@@ -976,11 +999,11 @@
 
                     {/* Footer / Signature Area */}
                     <div className="flex flex-col md:flex-row justify-between items-end text-xs text-slate-400 mt-12 pt-6 border-t border-slate-100">
-                        <div className="space-y-1">
+                        <div className="space-y-1 mb-4 md:mb-0 w-full md:w-auto">
                             <p>本報告基於使用者輸入之參數進行估算，僅供理財規劃參考。</p>
                             <p>實際市場波動、通膨變化及個人壽命皆可能影響最終結果。</p>
                         </div>
-                        <div className="mt-4 md:mt-0 text-right">
+                        <div className="text-right w-full md:w-auto">
                             <p className="font-serif italic text-slate-300 text-xl mb-1">Retirement Planner PRO</p>
                             <p>Generated via Financial Simulation Workstation</p>
                         </div>
@@ -1040,39 +1063,39 @@
 
             const [currentTime, setCurrentTime] = useState(new Date());
 
-            // 參數
-            const [birthDate, setBirthDate] = useState(() => loadState('birthDate', '1995-01-01'));
-            const [retireAge, setRetireAge] = useState(() => loadNumState('retireAge', 65));
-            const [maxAge, setMaxAge] = useState(() => loadNumState('maxAge', 100));
-            const [initialAmount, setInitialAmount] = useState(() => loadNumState('initialAmount', 100000));
-            const [monthlyContribution, setMonthlyContribution] = useState(() => loadNumState('monthlyContribution', 10000));
-            const [monthlyWithdrawal, setMonthlyWithdrawal] = useState(() => loadNumState('monthlyWithdrawal', 30000));
-            const [annualRate, setAnnualRate] = useState(() => loadNumState('annualRate', 6));
+            // 參數 (使用 v2 key 強制更新預設值，避免緩存問題)
+            const [birthDate, setBirthDate] = useState(() => loadState('birthDate_v7', '1995-01-01'));
+            const [retireAge, setRetireAge] = useState(() => loadNumState('retireAge_v7', 65));
+            const [maxAge, setMaxAge] = useState(() => loadNumState('maxAge_v7', 100)); // Default set to 100 years
+            const [initialAmount, setInitialAmount] = useState(() => loadNumState('initialAmount_v7', 100000));
+            const [monthlyContribution, setMonthlyContribution] = useState(() => loadNumState('monthlyContribution_v7', 10000));
+            const [monthlyWithdrawal, setMonthlyWithdrawal] = useState(() => loadNumState('monthlyWithdrawal_v7', 30000));
+            const [annualRate, setAnnualRate] = useState(() => loadNumState('annualRate_v7', 6));
             
             // 專業版參數
-            const [inflationRate, setInflationRate] = useState(() => loadNumState('inflationRate', 2.0)); 
-            const [adjustForInflation, setAdjustForInflation] = useState(() => { const s = localStorage.getItem('adjustForInflation'); return s !== null ? s === 'true' : true; }); 
+            const [inflationRate, setInflationRate] = useState(() => loadNumState('inflationRate_v7', 2.0)); 
+            const [adjustForInflation, setAdjustForInflation] = useState(() => { const s = localStorage.getItem('adjustForInflation_v7'); return s !== null ? s === 'true' : true; }); 
             const [viewRealValue, setViewRealValue] = useState(false); 
             
             // 新增: 重大事件
-            const [events, setEvents] = useState(() => loadJsonState('lifeEvents', []));
+            const [events, setEvents] = useState(() => loadJsonState('lifeEvents_v7', []));
 
             useEffect(() => {
                 const timer = setInterval(() => setCurrentTime(new Date()), 1000);
                 return () => clearInterval(timer);
             }, []);
 
-            // 儲存邏輯
-            useEffect(() => { localStorage.setItem('birthDate', birthDate) }, [birthDate]);
-            useEffect(() => { localStorage.setItem('retireAge', retireAge) }, [retireAge]);
-            useEffect(() => { localStorage.setItem('maxAge', maxAge) }, [maxAge]);
-            useEffect(() => { localStorage.setItem('initialAmount', initialAmount) }, [initialAmount]);
-            useEffect(() => { localStorage.setItem('monthlyContribution', monthlyContribution) }, [monthlyContribution]);
-            useEffect(() => { localStorage.setItem('monthlyWithdrawal', monthlyWithdrawal) }, [monthlyWithdrawal]);
-            useEffect(() => { localStorage.setItem('annualRate', annualRate) }, [annualRate]);
-            useEffect(() => { localStorage.setItem('inflationRate', inflationRate) }, [inflationRate]);
-            useEffect(() => { localStorage.setItem('adjustForInflation', adjustForInflation) }, [adjustForInflation]);
-            useEffect(() => { localStorage.setItem('lifeEvents', JSON.stringify(events)) }, [events]);
+            // 儲存邏輯 (更新 key 為 v7)
+            useEffect(() => { localStorage.setItem('birthDate_v7', birthDate) }, [birthDate]);
+            useEffect(() => { localStorage.setItem('retireAge_v7', retireAge) }, [retireAge]);
+            useEffect(() => { localStorage.setItem('maxAge_v7', maxAge) }, [maxAge]);
+            useEffect(() => { localStorage.setItem('initialAmount_v7', initialAmount) }, [initialAmount]);
+            useEffect(() => { localStorage.setItem('monthlyContribution_v7', monthlyContribution) }, [monthlyContribution]);
+            useEffect(() => { localStorage.setItem('monthlyWithdrawal_v7', monthlyWithdrawal) }, [monthlyWithdrawal]);
+            useEffect(() => { localStorage.setItem('annualRate_v7', annualRate) }, [annualRate]);
+            useEffect(() => { localStorage.setItem('inflationRate_v7', inflationRate) }, [inflationRate]);
+            useEffect(() => { localStorage.setItem('adjustForInflation_v7', adjustForInflation) }, [adjustForInflation]);
+            useEffect(() => { localStorage.setItem('lifeEvents_v7', JSON.stringify(events)) }, [events]);
 
             // 計算年齡/星座
             const personInfo = useMemo(() => {
@@ -1260,9 +1283,39 @@
 
             // --- 匯出功能 ---
             const handleExport = () => {
-                // ... existing export code ...
-                // Simplified for brevity in this prompt, reusing logic
-                const reportContent = `退休規劃報告 (含重大事件)\n產出時間: ${currentTime.toLocaleString()}\n最終資產: ${formatMoneyFull(finalNominal)}`;
+                const reportContent = `
+=========================================
+      全生涯退休資產專業評估報告
+=========================================
+產出時間: ${currentTime.toLocaleString('zh-TW')}
+
+--- 個人資訊 ---
+出生日期: ${birthDate} (${personInfo.age} 歲)
+屬相星座: ${personInfo.zodiac} / ${personInfo.starSign}
+生命倒數: 約 ${formatNumber(lifeCountdown.days)} 天 (至 ${maxAge} 歲)
+
+--- 參數設定 ---
+預計退休: ${actualRetireAge} 歲 (距今 ${actualRetireAge - personInfo.age} 年)
+預測終點: ${maxAge} 歲
+目前存款: ${formatMoneyFull(initialAmount)}
+每月投入: ${formatMoneyFull(monthlyContribution)}
+退休月領: ${formatMoneyFull(monthlyWithdrawal)} (現值)
+投資報酬: ${annualRate}%
+預估通膨: ${inflationRate}%
+退休金隨通膨調整: ${adjustForInflation ? '是' : '否'}
+
+--- 試算結果 (${viewRealValue ? '實質購買力' : '名目金額'}) ---
+1. 總投入本金: ${formatMoneyFull(totalPrincipal)}
+2. 總提領金額: ${formatMoneyFull(totalWithdrawn)}
+3. 最終剩餘資產: ${formatMoneyFull(viewRealValue ? finalReal : finalNominal)}
+
+--- 專業評估 ---
+財務健康分數: ${financialScore} / 100
+資產狀態: ${bankruptcyAge ? `⚠️ 危險 (資產將於 ${bankruptcyAge} 歲耗盡)` : `✅ 安全 (至 ${maxAge} 歲仍有剩餘)`}
+${bankruptcyAge ? `建議行動: 建議每月多存約 ${formatMoneyFull(gapSuggestion)} 以彌補缺口。` : '建議行動: 您的計畫目前看起來相當穩健。'}
+
+=========================================
+`;
                 const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -1285,23 +1338,23 @@
             };
 
             return (
-                <div className="min-h-screen font-sans p-4 md:p-8 bg-slate-50">
-                    <div className="max-w-[1400px] mx-auto">
+                <div className="min-h-screen font-sans p-3 sm:p-4 md:p-6 lg:p-8 bg-slate-50 overflow-x-hidden">
+                    <div className="max-w-[1600px] mx-auto">
                         
                         {/* Header */}
-                        <header className="mb-8 flex flex-col justify-between items-start gap-4 no-print">
-                            <div className="w-full flex flex-col md:flex-row justify-between items-center">
-                                <div className="text-center md:text-left mb-4 md:mb-0">
-                                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 flex items-center justify-center md:justify-start gap-3 mb-1">
-                                        <Icons.Target className="text-emerald-600 w-8 h-8 md:w-10 md:h-10" />
-                                        全生涯退休資產模擬工作站 <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full align-middle">FLAGSHIP</span>
+                        <header className="mb-6 md:mb-8 flex flex-col justify-between items-start gap-4 no-print">
+                            <div className="w-full flex flex-col md:flex-row justify-between items-center gap-3 md:gap-0">
+                                <div className="text-center md:text-left mb-2 md:mb-0">
+                                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-slate-900 flex items-center justify-center md:justify-start gap-3 mb-1">
+                                        <Icons.Target className="text-emerald-600 w-8 h-8 md:w-10 md:h-10 shrink-0" />
+                                        <span>全生涯退休模擬 <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full align-middle font-normal ml-1">V7</span></span>
                                     </h1>
-                                    <div className="flex items-center justify-center md:justify-start gap-2 text-slate-500 text-lg font-mono">
-                                        <Icons.Calendar size={18} />
+                                    <div className="flex items-center justify-center md:justify-start gap-2 text-slate-500 text-sm md:text-lg font-mono">
+                                        <Icons.Calendar size={16} />
                                         {currentTime.toLocaleDateString('zh-TW')} {currentTime.toLocaleTimeString('zh-TW')}
                                     </div>
                                 </div>
-                                <button onClick={handleExport} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl shadow-lg transition-all active:scale-95">
+                                <button onClick={handleExport} className="w-full md:w-auto flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm md:text-base">
                                     <Icons.Download size={18} />
                                     匯出文字數據
                                 </button>
@@ -1313,36 +1366,38 @@
                                     <div className="bg-white/10 p-2 rounded-lg">
                                         <Icons.Hourglass size={24} className="text-yellow-400" />
                                     </div>
-                                    <div>
+                                    <div className="text-center md:text-left">
                                         <p className="text-xs text-slate-300 font-bold uppercase tracking-wider">Life Countdown</p>
                                         <p className="text-sm">
                                             距離 <span className="font-bold text-yellow-400">{maxAge} 歲</span> 目標僅剩：
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex gap-4 md:gap-8">
+                                <div className="grid grid-cols-3 gap-4 md:gap-8 w-full md:w-auto">
                                     <div className="text-center">
-                                        <span className="block text-2xl md:text-3xl font-bold font-mono text-emerald-400">{formatNumber(lifeCountdown.days)}</span>
+                                        <span className="block text-xl md:text-3xl font-bold font-mono text-emerald-400">{formatNumber(lifeCountdown.days)}</span>
                                         <span className="text-xs text-slate-400">天 (Days)</span>
                                     </div>
                                     <div className="text-center">
-                                        <span className="block text-2xl md:text-3xl font-bold font-mono text-sky-400">{formatNumber(lifeCountdown.weeks)}</span>
+                                        <span className="block text-xl md:text-3xl font-bold font-mono text-sky-400">{formatNumber(lifeCountdown.weeks)}</span>
                                         <span className="text-xs text-slate-400">週 (Weeks)</span>
                                     </div>
                                     <div className="text-center">
-                                        <span className="block text-2xl md:text-3xl font-bold font-mono text-rose-400">{lifeCountdown.years}</span>
+                                        <span className="block text-xl md:text-3xl font-bold font-mono text-rose-400">{lifeCountdown.years}</span>
                                         <span className="text-xs text-slate-400">年 (Years)</span>
                                     </div>
                                 </div>
                             </div>
                         </header>
 
-                        <div className="flex flex-col xl:flex-row gap-6">
+                        {/* Main Grid Layout: Mobile(1 col) -> Tablet(1 col or 2) -> Desktop(3 col) */}
+                        {/* Use items-start to allow sticky sidebar to work */}
+                        <div className="flex flex-col xl:flex-row gap-6 items-start">
                             
-                            {/* 左側參數面板 */}
-                            <div className="w-full xl:w-[320px] shrink-0 space-y-6 no-print">
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                                    <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2 border-b border-slate-100 pb-4">
+                            {/* Left Panel: Inputs (Sticky on Desktop) */}
+                            <div className="w-full xl:w-[320px] shrink-0 space-y-6 no-print xl:sticky xl:top-6">
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
+                                    <h2 className="text-lg md:text-xl font-bold text-slate-800 mb-6 flex items-center gap-2 border-b border-slate-100 pb-4">
                                         <Icons.Calculator size={20} className="text-emerald-500" />
                                         基本參數
                                     </h2>
@@ -1350,7 +1405,7 @@
                                     {/* 生日 */}
                                     <div className="mb-6">
                                         <label className="text-sm font-medium text-slate-700 block mb-2">出生年月日</label>
-                                        <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="w-full bg-slate-50 p-2 rounded-lg border border-slate-200 text-slate-800 text-sm font-mono outline-none focus:ring-2 focus:ring-emerald-500"/>
+                                        <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="w-full bg-slate-50 p-2 rounded-lg border border-slate-200 text-slate-800 text-sm font-mono outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow"/>
                                         <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
                                             <span className="px-2 py-1 rounded bg-slate-100 text-slate-600">{personInfo.age} 歲</span>
                                             <span className="px-2 py-1 rounded bg-amber-100 text-amber-800">屬{personInfo.zodiac}</span>
@@ -1367,7 +1422,7 @@
                                     <InputGroup label="年化報酬率" value={annualRate} setValue={setAnnualRate} min={1} max={12} step={0.5} suffix=" %"/>
                                 </div>
 
-                                {/* 新增：人生重大支出事件簿 (放在左側第二塊) */}
+                                {/* Life Events Manager */}
                                 <LifeEventsManager 
                                     events={events} 
                                     setEvents={setEvents} 
@@ -1376,9 +1431,9 @@
                                 />
 
                                 {/* 進階/退休設定 */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 relative overflow-hidden">
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6 relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-20 h-20 bg-amber-50 rounded-bl-full -mr-10 -mt-10 z-0 opacity-50"></div>
-                                    <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2 border-b border-slate-100 pb-4 relative z-10">
+                                    <h2 className="text-lg md:text-xl font-bold text-slate-800 mb-6 flex items-center gap-2 border-b border-slate-100 pb-4 relative z-10">
                                         <Icons.Wallet size={20} className="text-amber-500" />
                                         退休與通膨設定
                                     </h2>
@@ -1408,18 +1463,18 @@
                                 </div>
                             </div>
 
-                            {/* 中間圖表與分析 */}
-                            <div className="flex-1 space-y-6">
+                            {/* Center Panel: Content */}
+                            <div className="flex-1 min-w-0 space-y-6 w-full">
                                 {/* 專業評估儀表板 */}
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 no-print">
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6 no-print">
                                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                        <h2 className="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2">
                                             <Icons.Shield className="text-indigo-500" size={24} />
                                             專業評估分析
                                         </h2>
-                                        <div className="flex bg-slate-100 p-1 rounded-lg">
-                                            <button onClick={() => setViewRealValue(false)} className={`px-3 py-1 text-sm rounded-md transition-all ${!viewRealValue ? 'bg-white shadow text-slate-800 font-bold' : 'text-slate-500'}`}>名目金額</button>
-                                            <button onClick={() => setViewRealValue(true)} className={`px-3 py-1 text-sm rounded-md transition-all ${viewRealValue ? 'bg-white shadow text-emerald-600 font-bold' : 'text-slate-500'}`}>實質購買力</button>
+                                        <div className="flex bg-slate-100 p-1 rounded-lg self-start md:self-auto">
+                                            <button onClick={() => setViewRealValue(false)} className={`px-3 py-1 text-xs md:text-sm rounded-md transition-all ${!viewRealValue ? 'bg-white shadow text-slate-800 font-bold' : 'text-slate-500'}`}>名目金額</button>
+                                            <button onClick={() => setViewRealValue(true)} className={`px-3 py-1 text-xs md:text-sm rounded-md transition-all ${viewRealValue ? 'bg-white shadow text-emerald-600 font-bold' : 'text-slate-500'}`}>實質購買力</button>
                                         </div>
                                     </div>
 
@@ -1494,15 +1549,15 @@
                                     </div>
                                 </div>
 
-                                {/* 圖表區域 */}
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-[450px] flex flex-col relative no-print">
-                                    <div className="absolute top-6 right-6 z-10 text-xs font-bold px-2 py-1 rounded bg-slate-100 text-slate-500 border border-slate-200">
+                                {/* 圖表區域 - Height Responsive */}
+                                <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 h-[350px] md:h-[450px] xl:h-[500px] flex flex-col relative no-print">
+                                    <div className="absolute top-4 right-4 z-10 text-[10px] md:text-xs font-bold px-2 py-1 rounded bg-slate-100 text-slate-500 border border-slate-200 opacity-80 md:opacity-100">
                                         {viewRealValue ? '顯示模式：實質購買力 (Real)' : '顯示模式：名目金額 (Nominal)'}
                                     </div>
                                     
                                     <div className="flex-1 w-full min-h-0">
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                                            <ComposedChart data={chartData} margin={{ top: 20, right: 10, left: -10, bottom: 0 }}>
                                                 <defs>
                                                     <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
                                                         <stop offset="5%" stopColor={viewRealValue ? "#059669" : "#10b981"} stopOpacity={0.3}/>
@@ -1513,11 +1568,11 @@
                                                 <XAxis dataKey="age" tickLine={false} axisLine={false} tick={{fill: '#94a3b8', fontSize: 12}} label={{ value: '年齡', position: 'insideBottomRight', offset: -5, fill: '#94a3b8' }}/>
                                                 <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`} tickLine={false} axisLine={false} tick={{fill: '#94a3b8', fontSize: 12}}/>
                                                 <Tooltip 
-                                                    contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px -2px rgb(0 0 0 / 0.15)' }}
+                                                    contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px -2px rgb(0 0 0 / 0.15)', fontSize: '12px' }}
                                                     formatter={(value, name) => [formatMoneyFull(value), name === 'eventCost' ? '重大支出' : (viewRealValue ? '實質資產' : '名目資產')]}
                                                     labelFormatter={(label) => `${label} 歲`}
                                                 />
-                                                <ReferenceLine x={actualRetireAge} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: '退休', fill: '#f59e0b', position: 'insideTopLeft' }} />
+                                                <ReferenceLine x={actualRetireAge} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: '退休', fill: '#f59e0b', position: 'insideTopLeft', fontSize: 12 }} />
                                                 
                                                 {/* 主資產曲線 */}
                                                 <Area 
@@ -1529,7 +1584,7 @@
                                                     animationDuration={800}
                                                 />
                                                 
-                                                {/* 重大支出柱狀圖 (顯示在曲線下方) */}
+                                                {/* 重大支出柱狀圖 */}
                                                 <Bar dataKey="eventCost" barSize={10} fill="#f43f5e" />
                                             </ComposedChart>
                                         </ResponsiveContainer>
@@ -1545,32 +1600,35 @@
                                     events={events}
                                 />
 
-                                {/* 敏感度分析矩陣 (位於報告書下方) */}
+                                {/* 敏感度分析矩陣 */}
                                 <SensitivityMatrix appState={appState} events={events} />
 
                                 {/* 公式與原理說明 */}
                                 <FormulaExplanation />
                             </div>
 
-                            {/* 右側工具欄 (Calculator + Notepad) */}
+                            {/* Right Panel: Widgets */}
+                            {/* Layout: Stacked vertical on XL, Grid on Mobile/Tablet */}
                             <div className="w-full xl:w-[280px] shrink-0 no-print">
-                                <div className="sticky top-6 space-y-6">
-                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center">
-                                        <h3 className="font-bold text-slate-700 mb-4 flex items-center justify-center gap-2">
-                                            <Icons.Calculator size={18} />
-                                            快速計算
-                                        </h3>
-                                        <CalculatorWidget />
-                                    </div>
-                                    <div className="text-center">
-                                        <NotepadWidget />
-                                    </div>
+                                <div className="xl:sticky xl:top-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1 gap-6">
+                                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center h-full">
+                                            <h3 className="font-bold text-slate-700 mb-4 flex items-center justify-center gap-2">
+                                                <Icons.Calculator size={18} />
+                                                快速計算
+                                            </h3>
+                                            <CalculatorWidget />
+                                        </div>
+                                        <div className="text-center h-full">
+                                            <NotepadWidget />
+                                        </div>
 
-                                    {/* 智能投資配置建議 */}
-                                    <PortfolioWidget annualRate={annualRate} />
+                                        {/* 智能投資配置建議 */}
+                                        <PortfolioWidget annualRate={annualRate} />
 
-                                    {/* 蒙地卡羅模擬 Widget */}
-                                    <MonteCarloWidget appState={appState} events={events} />
+                                        {/* 蒙地卡羅模擬 Widget */}
+                                        <MonteCarloWidget appState={appState} events={events} />
+                                    </div>
                                 </div>
                             </div>
 
